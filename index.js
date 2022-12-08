@@ -4,85 +4,67 @@ import passport from "passport";
 import { initalizePassport } from "./passport-config.js";
 import flash from "express-flash";
 import session from "express-session";
+import { checkNotAuthenticated } from "./middlewares/checkNotAuthenticated.js";
+import { checkAuthenticated } from "./middlewares/checkAuthenticated.js";
+import { config, RouteNames, users, ViewNames } from "./config/config.js";
+import { registerInputDto } from "./DTOs/auth.js";
+import { userObject } from "./DTOs/users.js";
 
 const app = express();
 
-const users = [];
-initalizePassport(passport, users);
+initalizePassport(passport);
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(flash());
 app.use(
   session({
-    secret: "secret",
+    secret: config.SECRET,
     resave: false,
     saveUninitialized: false,
   })
 );
 app.set("view engine", "ejs");
 
-app.get("/", checkAuthenticated, (req, res) => {
-  res.render("index", { title: "Home" });
+app.get(RouteNames.HOME, checkAuthenticated, (req, res) => {
+  res.render(ViewNames.INDEX, { title: "Home" });
 });
 
-app.get("/login", checkNotAuthenticated, (req, res) => {
-  res.render("login", { name: req.user?.name });
+app.get(RouteNames.LOGIN, checkNotAuthenticated, (req, res) => {
+  res.render(ViewNames.LOGIN, { name: req.user?.name });
 });
 
 app.post(
-  "/login",
+  RouteNames.LOGIN,
   checkNotAuthenticated,
   passport.authenticate("local", {
-    successRedirect: "/",
-    failureRedirect: "/login",
+    successRedirect: RouteNames.HOME,
+    failureRedirect: RouteNames.LOGIN,
     failureFlash: true,
   })
 );
 
-app.get("/register", checkNotAuthenticated, (req, res) => {
-  res.render("register", { title: "Register" });
+app.get(RouteNames.REGISTER, checkNotAuthenticated, (req, res) => {
+  res.render(ViewNames.REGISTER);
 });
 
-app.post("/register", checkNotAuthenticated, async (req, res) => {
-  const { name, email, password } = req.body;
+app.post(RouteNames.REGISTER, checkNotAuthenticated, async (req, res) => {
+  const response = registerInputDto(req.body);
   try {
-    const hashedPassword = await bcrypt.hash(password, 1);
-    users.push({
-      id: Date.now().toString(),
-      name,
-      email,
-      password: hashedPassword,
-    });
-    res.redirect("/login");
+    const hashedPassword = await bcrypt.hash(response.password, 69);
+    users.push(userObject({ ...response, password: hashedPassword }));
+    res.redirect(RouteNames.LOGIN);
   } catch (error) {
-    res.redirect("/register");
+    res.redirect(RouteNames.REGISTER);
   }
   console.log(users);
 });
 
-app.delete("/logout", (req, res) => {
-    req.logOut();
-    res.redirect("/login");
+app.delete(RouteNames.LOGOUT, (req, res) => {
+  req.logOut();
+  res.redirect(RouteNames.LOGIN);
 });
 
-
-function checkAuthenticated(req, res, next) {
-  if (req.isAuthenticated()) {
-    return next();
-  }
-  res.redirect("/login");
-}
-
-function checkNotAuthenticated(req, res, next) {
-  if (req.isAuthenticated()) {
-    return res.redirect("/");
-  }
-  next();
-}
-
-
-
-app.listen(3000, () => {
+app.listen(config.PORT, () => {
   console.log("Server is running on port 3000");
 });
