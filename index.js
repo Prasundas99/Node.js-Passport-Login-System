@@ -22,16 +22,17 @@ app.use(
 );
 app.set("view engine", "ejs");
 
-app.get("/", (req, res) => {
+app.get("/", checkAuthenticated, (req, res) => {
   res.render("index", { title: "Home" });
 });
 
-app.get("/login", (req, res) => {
-  res.render("login", { title: "Login" });
+app.get("/login", checkNotAuthenticated, (req, res) => {
+  res.render("login", { name: req.user?.name });
 });
 
 app.post(
   "/login",
+  checkNotAuthenticated,
   passport.authenticate("local", {
     successRedirect: "/",
     failureRedirect: "/login",
@@ -39,11 +40,11 @@ app.post(
   })
 );
 
-app.get("/register", (req, res) => {
+app.get("/register", checkNotAuthenticated, (req, res) => {
   res.render("register", { title: "Register" });
 });
 
-app.post("/register", async (req, res) => {
+app.post("/register", checkNotAuthenticated, async (req, res) => {
   const { name, email, password } = req.body;
   try {
     const hashedPassword = await bcrypt.hash(password, 1);
@@ -59,6 +60,20 @@ app.post("/register", async (req, res) => {
   }
   console.log(users);
 });
+
+function checkAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    return next();
+  }
+  res.redirect("/login");
+}
+
+function checkNotAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    return res.redirect("/");
+  }
+  next();
+}
 
 app.listen(3000, () => {
   console.log("Server is running on port 3000");
