@@ -61,6 +61,12 @@ app.post("/register", checkNotAuthenticated, async (req, res) => {
   console.log(users);
 });
 
+app.delete("/logout", (req, res) => {
+    req.logOut();
+    res.redirect("/login");
+});
+
+
 function checkAuthenticated(req, res, next) {
   if (req.isAuthenticated()) {
     return next();
@@ -74,6 +80,8 @@ function checkNotAuthenticated(req, res, next) {
   }
   next();
 }
+
+
 
 app.listen(3000, () => {
   console.log("Server is running on port 3000");
