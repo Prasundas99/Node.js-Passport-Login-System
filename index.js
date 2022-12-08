@@ -54,6 +54,7 @@ app.post(RouteNames.REGISTER, checkNotAuthenticated, async (req, res) => {
     const hashedPassword = await bcrypt.hash(response.password, 69);
     users.push(userObject({ ...response, password: hashedPassword }));
     res.redirect(RouteNames.LOGIN);
+    // res.return(req.body )
   } catch (error) {
     res.redirect(RouteNames.REGISTER);
   }
