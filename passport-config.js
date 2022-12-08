@@ -25,10 +25,12 @@ export const initalizePassport = async(passport) => {
   ));
 
   passport.serializeUser((user, done) => {
+    // add jwt token here
     done(null, user.id);
   });
 
   passport.deserializeUser((id, done) => {
+    // decrypt jwt token here
     return done(null, findUserById(id));
   });
 };
